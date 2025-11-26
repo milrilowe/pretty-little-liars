@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import type { GameState, Vote } from '@pretty-little-liars/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { GameState, Vote } from '../types/game';
 
-const SOCKET_URL = 'http://localhost:3000';
+const SOCKET_URL = 'http://localhost:3001';
 
 export function useSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -36,14 +36,20 @@ export function useSocket() {
       console.log(`Reconnection attempt ${attempt}/${maxReconnectAttempts}`);
     });
 
-    newSocket.on('game:state', (state: GameState) => {
-      console.log('Received game state:', state);
-      setGameState(state);
-    });
+    newSocket.on('state:update', (data: { gameState: GameState }) => {
+      console.log('Received game state:', data.gameState);
+      setGameState(data.gameState);
 
-    newSocket.on('player:joined', (data: { playerId: string }) => {
-      console.log('Player joined with ID:', data.playerId);
-      setPlayerId(data.playerId);
+      // Extract our player ID from the game state if we just joined
+      if (!playerId && data.gameState.players) {
+        const playerEntry = Object.entries(data.gameState.players).find(
+          ([id]) => id === newSocket.id
+        );
+        if (playerEntry) {
+          console.log('Found our player ID:', playerEntry[0]);
+          setPlayerId(playerEntry[0]);
+        }
+      }
     });
 
     setSocket(newSocket);
@@ -53,25 +59,30 @@ export function useSocket() {
     };
   }, []);
 
-  const joinGame = useCallback((name: string) => {
-    if (socket) {
-      console.log('Joining game with name:', name);
-      socket.emit('player:join', { name });
-    }
-  }, [socket]);
+  const joinGame = useCallback(
+    (name: string) => {
+      if (socket) {
+        console.log('Joining game with name:', name);
+        socket.emit('player:join', { playerName: name });
+      }
+    },
+    [socket]
+  );
 
-  const submitVote = useCallback((vote: Vote) => {
-    if (socket && playerId) {
-      console.log('Submitting vote:', vote);
-      socket.emit('vote:submit', { vote });
-    }
-  }, [socket, playerId]);
+  const submitVote = useCallback(
+    (vote: Vote) => {
+      if (socket && playerId) {
+        console.log('Submitting vote:', vote);
+        socket.emit('vote:submit', { vote });
+      }
+    },
+    [socket, playerId]
+  );
 
   const getTimeRemaining = useCallback((): number => {
-    if (!gameState?.roundEndTime) return 0;
-    const remaining = Math.max(0, Math.floor((gameState.roundEndTime - Date.now()) / 1000));
-    return remaining;
-  }, [gameState]);
+    // TODO: Implement timer when server adds roundEndTime to GameState
+    return 0;
+  }, []);
 
   return {
     socket,

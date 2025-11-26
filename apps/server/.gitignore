@@ -1,0 +1,5 @@
+dist/
+*.log
+.DS_Store
+game-state.json
+.env

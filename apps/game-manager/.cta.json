@@ -1,23 +1,17 @@
 {
-  "projectName": ".",
+  "projectName": "game-manager",
   "mode": "file-router",
   "typescript": true,
   "tailwind": true,
   "packageManager": "pnpm",
-  "addOnOptions": {
-    "drizzle": {
-      "database": "postgresql"
-    }
-  },
+  "addOnOptions": {},
   "git": true,
   "version": 1,
   "framework": "react-cra",
   "chosenAddOns": [
     "eslint",
-    "nitro",
-    "start",
-    "drizzle",
     "shadcn",
-    "t3env"
+    "t3env",
+    "tanstack-query"
   ]
 }

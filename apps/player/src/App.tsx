@@ -1,26 +1,19 @@
-import { useState, useEffect } from 'react';
-import { useSocket } from './hooks/useSocket';
-import { JoinScreen } from './components/JoinScreen';
-import { GameScreen } from './components/GameScreen';
+import { useEffect, useState } from 'react';
 import './App.css';
+import { GameScreen } from './components/GameScreen';
+import { JoinScreen } from './components/JoinScreen';
+import { useSocket } from './hooks/useSocket';
 
 function App() {
-  const {
-    gameState,
-    isConnected,
-    playerId,
-    joinGame,
-    submitVote,
-    getTimeRemaining,
-  } = useSocket();
+  const { gameState, isConnected, playerId, joinGame, submitVote, getTimeRemaining } = useSocket();
 
   const [playerName, setPlayerName] = useState<string>('');
   const [hasJoined, setHasJoined] = useState(false);
 
   // Check if player is already in the game (reconnection scenario)
   useEffect(() => {
-    if (playerId && gameState) {
-      const player = gameState.players.find(p => p.id === playerId);
+    if (playerId && gameState && gameState.players) {
+      const player = gameState.players[playerId];
       if (player) {
         setPlayerName(player.name);
         setHasJoined(true);
