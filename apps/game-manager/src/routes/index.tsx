@@ -1,39 +1,40 @@
 import { createFileRoute } from '@tanstack/react-router'
-import logo from '../logo.svg'
+import React from 'react'
+import CreatorMode from '../components/CreatorMode'
+import { mockComedians } from '../lib/mockData'
+import type { Comedian } from '@pretty-little-liars/types'
 
 export const Route = createFileRoute('/')({
-  component: App,
+  component: GameManager,
 })
 
-function App() {
+function GameManager() {
+  const [comedians, setComedians] = React.useState<Comedian[]>(mockComedians)
+  const [mode, setMode] = React.useState<'creator' | 'director'>('creator')
+
+  // Mock locked indices - these would come from game state
+  // -1 means nothing is locked yet (game hasn't started)
+  const [lockedComedianIndex] = React.useState(-1)
+  const [lockedStoryIndex] = React.useState(-1)
+
+  const handleEnterDirectorMode = () => {
+    setMode('director')
+    // TODO: This will be implemented in the next phase
+    alert('Director Mode coming soon!')
+  }
+
+  if (mode === 'director') {
+    // TODO: Implement Director Mode
+    return <div>Director Mode - Coming Soon</div>
+  }
+
   return (
-    <div className="text-center">
-      <header className="min-h-screen flex flex-col items-center justify-center bg-[#282c34] text-white text-[calc(10px+2vmin)]">
-        <img
-          src={logo}
-          className="h-[40vmin] pointer-events-none animate-[spin_20s_linear_infinite]"
-          alt="logo"
-        />
-        <p>
-          Edit <code>src/routes/index.tsx</code> and save to reload.
-        </p>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://tanstack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn TanStack
-        </a>
-      </header>
-    </div>
+    <CreatorMode
+      comedians={comedians}
+      onUpdateComedians={setComedians}
+      lockedComedianIndex={lockedComedianIndex}
+      lockedStoryIndex={lockedStoryIndex}
+      onEnterDirectorMode={handleEnterDirectorMode}
+    />
   )
 }
