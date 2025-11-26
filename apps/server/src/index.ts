@@ -70,6 +70,7 @@ io.on('connection', (socket) => {
       currentVote: null,
     };
     gameState.players.push(player);
+    socket.emit('player:joined', { playerId: socket.id });
     io.emit('game:state', gameState);
   });
 
