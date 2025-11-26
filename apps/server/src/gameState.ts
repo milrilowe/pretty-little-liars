@@ -37,19 +37,52 @@ export function updateGameState(updates: Partial<GameState>): GameState {
   return gameState;
 }
 
-export function addPlayer(playerId: string, playerName: string): Player {
+export function addPlayer(playerId: string, playerName: string, sessionToken?: string): Player {
   if (!gameState) {
     throw new Error('Game state not initialized');
   }
-  
+
   const player: Player = {
     id: playerId,
     name: playerName,
     connected: true,
     totalScore: 0,
+    sessionToken: sessionToken || uuidv4(),
   };
-  
+
   gameState.players[playerId] = player;
+  return player;
+}
+
+export function findPlayerBySessionToken(sessionToken: string): Player | null {
+  if (!gameState) {
+    return null;
+  }
+
+  return Object.values(gameState.players).find(
+    player => player.sessionToken === sessionToken
+  ) || null;
+}
+
+export function reconnectPlayer(oldPlayerId: string, newPlayerId: string): Player | null {
+  if (!gameState?.players[oldPlayerId]) {
+    return null;
+  }
+
+  const player = gameState.players[oldPlayerId];
+  player.id = newPlayerId;
+  player.connected = true;
+
+  // Update votes if player had voted
+  if (gameState.votes[oldPlayerId]) {
+    gameState.votes[newPlayerId] = gameState.votes[oldPlayerId];
+    delete gameState.votes[oldPlayerId];
+  }
+
+  // Move player to new ID
+  gameState.players[newPlayerId] = player;
+  delete gameState.players[oldPlayerId];
+
   return player;
 }
 

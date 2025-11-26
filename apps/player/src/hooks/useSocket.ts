@@ -1,14 +1,19 @@
 import type { GameState, Vote } from '@pretty-little-liars/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import Cookies from 'js-cookie';
 
 const SOCKET_URL = 'http://localhost:3001';
+const SESSION_COOKIE_NAME = 'player_session_token';
 
 export function useSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(() => {
+    return Cookies.get(SESSION_COOKIE_NAME) || null;
+  });
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
 
@@ -36,12 +41,19 @@ export function useSocket() {
       console.log(`Reconnection attempt ${attempt}/${maxReconnectAttempts}`);
     });
 
+    newSocket.on('session:token', (data: { sessionToken: string }) => {
+      console.log('Received session token:', data.sessionToken);
+      setSessionToken(data.sessionToken);
+      // Store in cookie for 30 days
+      Cookies.set(SESSION_COOKIE_NAME, data.sessionToken, { expires: 30 });
+    });
+
     newSocket.on('state:update', (data: { gameState: GameState }) => {
       console.log('Received game state:', data.gameState);
       setGameState(data.gameState);
 
-      // Extract our player ID from the game state if we just joined
-      if (!playerId && data.gameState.players) {
+      // Extract our player ID from the game state
+      if (data.gameState.players) {
         const playerEntry = Object.entries(data.gameState.players).find(
           ([id]) => id === newSocket.id
         );
@@ -62,11 +74,14 @@ export function useSocket() {
   const joinGame = useCallback(
     (name: string) => {
       if (socket) {
-        console.log('Joining game with name:', name);
-        socket.emit('player:join', { playerName: name });
+        console.log('Joining game with name:', name, 'session token:', sessionToken);
+        socket.emit('player:join', {
+          playerName: name,
+          sessionToken: sessionToken || undefined
+        });
       }
     },
-    [socket]
+    [socket, sessionToken]
   );
 
   const submitVote = useCallback(

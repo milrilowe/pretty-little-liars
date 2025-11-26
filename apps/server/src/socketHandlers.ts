@@ -15,6 +15,8 @@ import {
   jumpToSlide,
   resetVotes,
   initializeGameState,
+  findPlayerBySessionToken,
+  reconnectPlayer,
 } from './gameState';
 import {
   calculateVoteDistribution,
@@ -59,19 +61,41 @@ export function setupSocketHandlers(io: Server): void {
     
     // Player connection
     socket.on('player:join', (payload: PlayerJoinPayload) => {
-      console.log('Player joining:', payload.playerName);
-      
+      console.log('Player joining:', payload.playerName, 'with session token:', payload.sessionToken);
+
       try {
-        const player = addPlayer(socket.id, payload.playerName);
+        let player;
+
+        // Check if player is reconnecting with existing session
+        if (payload.sessionToken) {
+          const existingPlayer = findPlayerBySessionToken(payload.sessionToken);
+          if (existingPlayer) {
+            console.log('Player reconnecting:', existingPlayer.name);
+            player = reconnectPlayer(existingPlayer.id, socket.id);
+
+            // Remove old socket if exists
+            if (existingPlayer.id !== socket.id) {
+              playerSockets.delete(existingPlayer.id);
+            }
+          }
+        }
+
+        // If not reconnecting, create new player
+        if (!player) {
+          player = addPlayer(socket.id, payload.playerName, payload.sessionToken);
+          console.log('New player joined:', player.name);
+        }
+
         playerSockets.set(socket.id, socket);
-        
-        // Send state to new player
+
+        // Send session token back to player
+        socket.emit('session:token', { sessionToken: player.sessionToken });
+
+        // Send state to player
         socket.emit('state:update', { gameState: getGameState() });
-        
+
         // Notify everyone
         broadcastStateUpdate(io);
-        
-        console.log('Player joined:', player.name);
       } catch (error) {
         console.error('Error adding player:', error);
         socket.emit('error', { message: 'Failed to join game' });

@@ -3,6 +3,7 @@ import './App.css';
 import { GameScreen } from './components/GameScreen';
 import { JoinScreen } from './components/JoinScreen';
 import { useSocket } from './hooks/useSocket';
+import Cookies from 'js-cookie';
 
 function App() {
   const { gameState, isConnected, playerId, joinGame, submitVote, getTimeRemaining } = useSocket();
@@ -17,9 +18,22 @@ function App() {
       if (player) {
         setPlayerName(player.name);
         setHasJoined(true);
+        // Store player name in cookie for auto-rejoin
+        Cookies.set('player_name', player.name, { expires: 30 });
       }
     }
   }, [playerId, gameState]);
+
+  // Auto-rejoin if we have a stored session
+  useEffect(() => {
+    const sessionToken = Cookies.get('player_session_token');
+    const storedName = Cookies.get('player_name');
+
+    if (isConnected && sessionToken && storedName && !hasJoined && !playerId) {
+      console.log('Auto-rejoining with stored session');
+      joinGame(storedName);
+    }
+  }, [isConnected, hasJoined, playerId, joinGame]);
 
   const handleJoin = (name: string) => {
     setPlayerName(name);

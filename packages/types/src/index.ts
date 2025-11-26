@@ -25,6 +25,7 @@ export interface Player {
   name: string;
   connected: boolean;
   totalScore: number;
+  sessionToken?: string;
 }
 
 // Game State
@@ -78,6 +79,7 @@ export interface PlayerJoinPayload {
   role: 'player';
   sessionId: string;
   playerName: string;
+  sessionToken?: string;
 }
 
 export interface GameSetupPayload {
